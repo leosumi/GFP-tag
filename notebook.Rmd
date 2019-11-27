@@ -1,0 +1,195 @@
+---
+title: "Simulation of a polymer with a GFP attached using dissipative particle dynamics"
+author: "Léo Sumi"
+date: "27 November 2019"
+output:
+  html_notebook: default
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r include = FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+```
+
+Green fluorescence protein (GFP) is a fluorescent protein. It is widely used in labs for protein tagging. GFP is fused to a protein of interest to track the protein in question. It is generally assumed that the GFP will not have an effect on the activity of the protein of interest. But GFP will affect the structure of the protein of interest due to its large size.
+
+Using dissipative particle dynamics (DPD), simulations of a polymer with or without a GFP attached to it were performed to investigate the effect of the GFP on the polymer. The polymer has a length of 10 or 20 beads depending on the simulation. The parameters investigated are the polymer beads diffusion constant and the polymer end-to-end length.
+
+To reduce computation time, many time steps was used instead of big boxes. The first runs used boxes of 10 by 10 by 10 with 10'000 time steps, but the time series did not indicate a clear equilibrium state. The final simulation used a box of 20 by 20 by 20 with 100'000 time steps. A bigger box was not used as the 20 by 20 by 20 box already gives rise to two hours of computation time per simulation.
+
+```{r}
+library(ggplot2)
+```
+
+```{r}
+labels <- c("time", "temperature", "pressure", "V4", "V5", "V6", "w-bead-diffusion", "h-bead-diffusion", "t-bead-diffusion", "b-bead-diffusion", "g-bead-diffusion", "l-bead-diffusion", "water-end-end-length", "polymer-end-end-length")
+
+# 10x10x10
+data.10.GFP.10.100 <- read.table(file = "data/dmpchs.10.GFP.10.100", col.names = labels)
+data.10.NOGFP.10.100 <- read.table(file = "data/dmpchs.10.NOGFP.10.100", col.names = labels)
+data.20.GFP.10.100 <- read.table(file = "data/dmpchs.20.GFP.10.100", col.names = labels)
+data.20.NOGFP.10.100 <- read.table(file = "data/dmpchs.20.NOGFP.10.100", col.names = labels)
+
+# 20x20x20
+data.10.GFP.20.100 <- read.table(file = "data/dmpchs.10.GFP.20.100", col.names = labels)
+data.10.NOGFP.20.100 <- read.table(file = "data/dmpchs.10.NOGFP.20.100", col.names = labels)
+data.20.GFP.20.100 <- read.table(file = "data/dmpchs.20.GFP.20.100", col.names = labels)
+data.20.NOGFP.20.100 <- read.table(file = "data/dmpchs.20.NOGFP.20.100", col.names = labels)
+```
+
+```{r}
+# 10x10x10
+data.10.GFP <- data.10.GFP.10.100[, c("time", "b.bead.diffusion", "polymer.end.end.length")]
+data.10.GFP["GFP"] <- TRUE
+data.10.GFP["length"] <- 10
+rm(data.10.GFP.10.100)
+
+data.10.NOGFP <- data.10.NOGFP.10.100[, c("time", "b.bead.diffusion", "polymer.end.end.length")]
+data.10.NOGFP["GFP"] <- FALSE
+data.10.NOGFP["length"] <- 10
+rm(data.10.NOGFP.10.100)
+
+data.20.GFP <- data.20.GFP.10.100[, c("time", "b.bead.diffusion", "polymer.end.end.length")]
+data.20.GFP["GFP"] <- TRUE
+data.20.GFP["length"] <- 20
+rm(data.20.GFP.10.100)
+
+data.20.NOGFP <- data.20.NOGFP.10.100[, c("time", "b.bead.diffusion", "polymer.end.end.length")]
+data.20.NOGFP["GFP"] <- FALSE
+data.20.NOGFP["length"] <- 20
+rm(data.20.NOGFP.10.100)
+
+data.box.10 <- rbind(data.10.GFP, data.10.NOGFP, data.20.GFP, data.20.NOGFP)
+rm(data.10.GFP, data.10.NOGFP, data.20.GFP, data.20.NOGFP)
+data.box.10["box"] <- 10
+
+# 20x20x20
+data.10.GFP <- data.10.GFP.20.100[, c("time", "b.bead.diffusion", "polymer.end.end.length")]
+data.10.GFP["GFP"] <- TRUE
+data.10.GFP["length"] <- 10
+rm(data.10.GFP.20.100)
+
+data.10.NOGFP <- data.10.NOGFP.20.100[, c("time", "b.bead.diffusion", "polymer.end.end.length")]
+data.10.NOGFP["GFP"] <- FALSE
+data.10.NOGFP["length"] <- 10
+rm(data.10.NOGFP.20.100)
+
+data.20.GFP <- data.20.GFP.20.100[, c("time", "b.bead.diffusion", "polymer.end.end.length")]
+data.20.GFP["GFP"] <- TRUE
+data.20.GFP["length"] <- 20
+rm(data.20.GFP.20.100)
+
+data.20.NOGFP <- data.20.NOGFP.20.100[, c("time", "b.bead.diffusion", "polymer.end.end.length")]
+data.20.NOGFP["GFP"] <- FALSE
+data.20.NOGFP["length"] <- 20
+rm(data.20.NOGFP.20.100)
+
+data.box.20 <- rbind(data.10.GFP, data.10.NOGFP, data.20.GFP, data.20.NOGFP)
+rm(data.10.GFP, data.10.NOGFP, data.20.GFP, data.20.NOGFP)
+data.box.20["box"] <- 20
+
+# data
+data <- rbind(data.box.10, data.box.20)
+rm(data.box.10, data.box.20)
+
+data$length <- as.factor(data$length)
+data$box <- as.factor(data$box)
+```
+
+## Diffusion constant
+
+The time series of the polymer diffusion constant shows a different behavior during the first 10'000 time steps. Longer simulation times were clearly needed. The polymer length has an impact on the diffusion constant. The smaller polymers diffuse more rapidly. The presence of the GFP on the polymer seams to affect only the small polymer in its diffusion.
+
+```{r}
+box.20 <- subset(data, box == 20)
+
+ggplot(data = box.20, aes(x = time, y = b.bead.diffusion, colour = GFP, linetype = length)) +
+  geom_line() +
+  labs(title = "Time series of the polymer diffusion constant") +
+  ylab("polymer bead diffusion constant")
+```
+
+```{r}
+end <- subset(box.20, time >= 50000)
+
+ggplot(data = end, aes(x = time, y = b.bead.diffusion, colour = GFP, linetype = length)) +
+  geom_line() +
+  labs(title = "Time series of the polymer diffusion constant", subtitle = "50'000 last steps") +
+  ylab("polymer bead diffusion constant")
+```
+
+```{r}
+# B bead diffusion
+stat <- data.frame(length = c(10, 10, 20, 20),
+                   GFP = c(FALSE, TRUE, FALSE, TRUE),
+                   mean = c(mean(subset(end, subset = !GFP & length == 10)$b.bead.diffusion),
+                            mean(subset(end, subset = GFP & length == 10)$b.bead.diffusion),
+                            mean(subset(end, subset = !GFP & length == 20)$b.bead.diffusion),
+                            mean(subset(end, subset = GFP & length == 20)$b.bead.diffusion)
+                            ),
+                    sd = c(sd(subset(end, subset = !GFP & length == 10)$b.bead.diffusion),
+                           sd(subset(end, subset = GFP & length == 10)$b.bead.diffusion),
+                           sd(subset(end, subset = !GFP & length == 20)$b.bead.diffusion),
+                           sd(subset(end, subset = GFP & length == 20)$b.bead.diffusion)
+                           )
+                   )
+
+stat$length <- as.factor(stat$length)
+
+pd <- position_dodge(width = 0.2)
+ggplot(data = stat, aes(x = length, y = mean, colour = GFP)) +
+  geom_point(position = pd) +
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd), width=.1, position = pd) +
+  labs(title = "Average of the polymer diffusion constant", subtitle = "50'000 last steps") +
+  ylab("mean (SD)") +
+  xlab("Number of beads in polymer")
+```
+
+## End-to-end length
+
+The time series of the end-to-end length of the polymer does not allow discriminating between a polymer with a GFP attached to a bare polymer. The GFP seams to have negligible influence on the end-to-end length of the polymer. The results are similar in the case of a polymer with 20 beads (data not shown). The only influence on the polymer end-to-end length is caused by the number of beads in the polymer.
+
+```{r}
+data.stat <- read.csv(file = "data.csv")
+
+data.stat$length <- as.factor(data.stat$length)
+data.stat$box <- as.factor(data.stat$box)
+data.stat$time <- as.factor(data.stat$time)
+
+data.stat <- subset(data.stat, time == 100)
+```
+
+
+```{r}
+length.10 <- subset(box.20, length == 10)
+end <- subset(length.10, time >= 50000)
+
+ggplot(data = end, aes(x = time, y = polymer.end.end.length, colour = GFP)) +
+  geom_line() +
+  labs(title = "Time series of the polymer end-to-end length", subtitle = "50'000 last steps, polymer with 10 beads") +
+  ylab("polymer end-to-end length")
+```
+
+```{r}
+ggplot(data = end, aes(x = polymer.end.end.length, colour = GFP)) +
+  geom_density() +
+  labs(title = "Histogram of the polymer end-to-end length", subtitle = "50'000 last steps, polymer with 10 beads") +
+  ylab("density")
+```
+
+
+```{r}
+box.20 <- subset(data.stat, box == 20)
+
+pd <- position_dodge(width = 0.2)
+ggplot(data = box.20, aes(x = length, y = mean.ee.length, colour = GFP)) +
+  geom_point(position = pd) +
+  geom_errorbar(aes(ymin=mean.ee.length-sd.ee.length, ymax=mean.ee.length+sd.ee.length), width=.1, position = pd) +
+  labs(title = "Average of the polymer end-to-end length") +
+  ylab("mean (SD)") +
+  xlab("Number of beads in polymer")
+```
+
+The source code is available at <https://github.com/leosumi/GFP-tag>.
