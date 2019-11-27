@@ -1,0 +1,82 @@
+dpd
+
+Title	" BIOENG-455 Exercises 2019  "
+Date    09/07/19
+Comment	" How does the presence of bound GFP modify the shape fluctuations of the polymer?  "
+
+State   random
+
+
+Bead	W
+    	0.5
+    	25
+    	4.5
+
+Bead	H
+        0.5
+        23    25
+        4.5   4.5
+
+Bead    T
+        0.5
+        23    25    25
+        4.5   4.5   4.5
+
+Bead    B
+        0.5
+        23    25    25   25
+        4.5   4.5   4.5  4.5
+
+Bead    G
+        0.5
+        23   25   25   25   25
+        4.5  4.5  4.5  4.5  4.5
+
+Bead    L
+        0.5
+        23   25   25   25   25   25
+        4.5  4.5  4.5  4.5  4.5  4.5
+
+
+Bond	H  B   128  0.5
+Bond    B  B   128  0.5
+Bond    T  B   128  0.5
+Bond    G  G   128  0.25
+Bond    G  H   128  0.5
+Bond    G  B   128  0.5
+Bond    G  T   128  0.5
+Bond    B  L   128  0.5
+Bond    L  L   128  0.5
+Bond    L  G   128  0.5
+Bond    L  T   128  0.5
+
+BondPair B  B  B   5.0  0.0
+BondPair G  G  G   20.0  0.0
+
+
+Polymer Water    0.9995  " (W) "
+Polymer Rod      0.0005  " (H (18 B) T) " Head H Tail T
+
+
+
+Box        10  10  10             1 1 1
+Density		3
+Temp		1
+RNGSeed		-899823
+Lambda		0.5
+Step		0.002
+Time        100000
+SamplePeriod    100
+AnalysisPeriod  50000
+DensityPeriod   100000
+DisplayPeriod   1000
+RestartPeriod   100000
+Grid		1 1 1
+
+
+Command	ToggleBeadDisplay              1   W
+Command	SetCurrentStateCamera	       1   0.5 -1.5 0.5  0.5 0.5 0.5
+Command SetCurrentStateDefaultFormat  1    Paraview
+
+Command	SetTimeStepSize	               1000  0.02
+
